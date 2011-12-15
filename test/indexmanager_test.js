@@ -5,6 +5,8 @@ var {Semaphore} = require("ringo/concurrent");
 var {IndexManager} = require("../lib/indexmanager");
 var {FSDirectory, RAMDirectory} = org.apache.lucene.store;
 var {Document, Field} = org.apache.lucene.document;
+var {StandardAnalyzer} = org.apache.lucene.analysis.standard;
+var {Version} = org.apache.lucene.util;
 var File = java.io.File;
 
 var getTempDir = function() {
@@ -40,7 +42,7 @@ exports.testInitDirectory = function() {
 
 exports.testInitWriter = function() {
     var dir = IndexManager.initRamDirectory();
-    var writer = IndexManager.initWriter(dir);
+    var writer = IndexManager.initWriter(dir, new StandardAnalyzer(Version.LUCENE_35));
     assert.isNotNull(writer);
 };
 
