@@ -53,16 +53,6 @@ exports.testConstructor = function() {
     assert.isNotNull(manager.searcher);
 };
 
-exports.testIndexer = function() {
-    var manager = IndexManager.createRamIndex();
-    assert.isFalse(manager.isRunning());
-    assert.isTrue(manager.start());
-    assert.isTrue(manager.isRunning());
-    assert.isTrue(manager.stop());
-    assert.isFalse(manager.stop());
-    assert.isFalse(manager.isRunning());
-};
-
 exports.testSize = function() {
     var manager = IndexManager.createRamIndex();
     assert.strictEqual(manager.size(), 0);
@@ -72,13 +62,12 @@ exports.testAddSync = function() {
     var manager = IndexManager.createRamIndex();
     assert.isNotNull(manager.writer);
     assert.strictEqual(manager.size(), 0);
-    manager.add(getDocument(1));
+    manager.add(getDocument(1), true);
     assert.strictEqual(manager.size(), 1);
 };
 
 exports.testAddConcurrency = function() {
     var manager = IndexManager.createRamIndex();
-    manager.start();
 
     // starting 10 workers, each adding 10 documents
     var nrOfWorkers = 10;
@@ -90,19 +79,16 @@ exports.testAddConcurrency = function() {
             "onmessage": function(event) {
                 var workerNr = event.data;
                 for (var i=0; i<docsPerWorker; i+=1) {
-                    console.log("Adding document", workerNr, i);
                     manager.add(getDocument((workerNr * 10) + i));
                 }
                 semaphore.signal();
             }
         });
-        w.postMessage(i, true);
+        w.postMessage(i);
     }
-
     // wait for all workers to finish
     semaphore.wait(nrOfWorkers);
     // FIXME: need a better way to determine when the manager has finished indexing
     java.lang.Thread.sleep(500);
     assert.strictEqual(manager.size(), nrOfWorkers * docsPerWorker);
-    manager.stop();
 };
