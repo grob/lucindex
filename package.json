@@ -1,0 +1,13 @@
+{
+    "name": "indexmanager",
+    "version": "0.1",
+    "description": "A Lucene index manager for RingoJS",
+    "keywords": ["ringo", "lucene", "index", "search"],
+    "author": {
+        "name": "Robert Gaggl",
+        "email": "robert@nomatic.org",
+        "web": "http://github.com/grob/"
+    },
+    "contributors": [],
+    "main": "./lib/indexmanager.js"
+}
