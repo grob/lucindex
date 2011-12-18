@@ -21,7 +21,7 @@ var getTempDir = function() {
 
 var getSampleDocument = function(value) {
     var doc = new Document();
-    doc.add(new Field("id", value || 1,
+    doc.add(new Field("id", value || 0,
              Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
     return doc;
 };
@@ -40,34 +40,19 @@ exports.testInitDirectory = function() {
     tempDir["delete"]();
 };
 
-exports.testInitWriter = function() {
-    var dir = IndexManager.initRamDirectory();
-    var writer = IndexManager.initWriter(dir, new StandardAnalyzer(Version.LUCENE_35));
-    assert.isNotNull(writer);
-};
-
 exports.testConstructor = function() {
     var manager = IndexManager.createRamIndex();
     assert.isNotNull(manager);
     assert.isNotNull(manager.writer);
     assert.isNotNull(manager.reader);
     assert.isNotNull(manager.searcher);
+    manager.close();
 };
 
 exports.testSize = function() {
     var manager = IndexManager.createRamIndex();
     assert.strictEqual(manager.size(), 0);
-};
-
-exports.testAddSync = function() {
-    var manager = IndexManager.createRamIndex();
-    assert.strictEqual(manager.size(), 0);
-    // add document without commit
-    manager.addSync(getSampleDocument(1), false);
-    assert.strictEqual(manager.size(), 0);
-    // add document with commit (default)
-    manager.addSync(getSampleDocument(2));
-    assert.strictEqual(manager.size(), 2);
+    manager.close();
 };
 
 exports.testConcurrentAsyncAdd = function() {
@@ -75,7 +60,8 @@ exports.testConcurrentAsyncAdd = function() {
 
     // starting 10 workers, each adding 10 documents
     var nrOfWorkers = 10;
-    var docsPerWorker = 10;
+    var docsPerWorker = 3;
+    var docs = nrOfWorkers * docsPerWorker;
     var semaphore = new Semaphore();
     for (var i=0; i<nrOfWorkers; i+=1) {
         var w = new Worker({
@@ -92,29 +78,24 @@ exports.testConcurrentAsyncAdd = function() {
     // wait for all workers to finish
     semaphore.wait(nrOfWorkers);
     // FIXME: how to determine if all async adds are finished?
-    java.lang.Thread.sleep(100);
-    assert.strictEqual(manager.size(), nrOfWorkers * docsPerWorker);
-};
-
-exports.testRemoveSync = function() {
-    var manager = IndexManager.createRamIndex();
-    assert.strictEqual(manager.size(), 0);
-    manager.addSync(getSampleDocument(1));
-    assert.strictEqual(manager.size(), 1);
-    manager.removeSync("id", 1);
-    assert.strictEqual(manager.size(), 0);
+    java.lang.Thread.sleep(1000);
+    assert.strictEqual(manager.size(), docs);
+    manager.close();
 };
 
 exports.testConcurrentAsyncRemove = function() {
     var manager = IndexManager.createRamIndex();
     var nrOfWorkers = 10;
-    var docsPerWorker = 10;
-    var docs = nrOfWorkers * docsPerWorker;
-    for (var i=0; i<docs; i+=1) {
-        manager.addSync(getSampleDocument(i), false);
+    var docsPerWorker = 3;
+    var docs = [];
+    for (var i=0; i<nrOfWorkers; i+=1) {
+        for (var j=0; j<docsPerWorker; j+=1) {
+            docs.push(getSampleDocument((i * 10) + j));
+        }
     }
-    manager.commit();
-    assert.strictEqual(manager.size(), docs);
+    manager.add(docs);
+    java.lang.Thread.sleep(1000);
+    assert.strictEqual(manager.size(), docs.length);
 
     // starting 10 workers, each removing 10 documents
     var semaphore = new Semaphore();
@@ -133,6 +114,7 @@ exports.testConcurrentAsyncRemove = function() {
     // wait for all workers to finish
     semaphore.wait(nrOfWorkers);
     // FIXME: how to determine if all async removals are finished?
-    java.lang.Thread.sleep(100);
+    java.lang.Thread.sleep(2000);
     assert.strictEqual(manager.size(), 0);
+    manager.close();
 };
