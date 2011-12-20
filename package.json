@@ -1,5 +1,5 @@
 {
-    "name": "indexmanager",
+    "name": "lucindex",
     "version": "0.1",
     "description": "A Lucene index manager for RingoJS",
     "keywords": ["ringo", "lucene", "index", "search"],
@@ -9,5 +9,5 @@
         "web": "http://github.com/grob/"
     },
     "contributors": [],
-    "main": "./lib/indexmanager.js"
+    "main": "./lib/index.js"
 }
