@@ -2,7 +2,7 @@ var assert = require("assert");
 var fs = require("fs");
 var {Worker} = require("ringo/worker");
 var {Semaphore} = require("ringo/concurrent");
-var {IndexManager} = require("../lib/indexmanager");
+var {Index} = require("../lib/index");
 var {FSDirectory, RAMDirectory} = org.apache.lucene.store;
 var {Document, Field} = org.apache.lucene.document;
 var {StandardAnalyzer} = org.apache.lucene.analysis.standard;
@@ -19,6 +19,18 @@ var getTempDir = function() {
     return tempDir;
 };
 
+var waitFor = function(callback) {
+    var timeout = java.lang.System.currentTimeMillis() + 2000;
+    while (callback() == false) {
+        if (java.lang.System.currentTimeMillis() < timeout) {
+            java.lang.Thread.currentThread().sleep(100);
+        } else {
+            throw new Error("Timeout");
+        }
+    }
+    return true;
+};
+
 var getSampleDocument = function(value) {
     var doc = new Document();
     doc.add(new Field("id", value || 0,
@@ -27,21 +39,21 @@ var getSampleDocument = function(value) {
 };
 
 exports.testInitRamDirectory = function() {
-    var dir = IndexManager.initRamDirectory();
+    var dir = Index.initRamDirectory();
     assert.isNotNull(dir);
     assert.isTrue(dir instanceof RAMDirectory);
 };
 
 exports.testInitDirectory = function() {
     var tempDir = getTempDir();
-    var dir = IndexManager.initDirectory("test", tempDir);
+    var dir = Index.initDirectory("test", tempDir);
     assert.isNotNull(dir);
     assert.isTrue(dir instanceof FSDirectory);
     tempDir["delete"]();
 };
 
 exports.testConstructor = function() {
-    var manager = IndexManager.createRamIndex();
+    var manager = Index.createRamIndex();
     assert.isNotNull(manager);
     assert.isNotNull(manager.writer);
     assert.isNotNull(manager.reader);
@@ -50,13 +62,15 @@ exports.testConstructor = function() {
 };
 
 exports.testSize = function() {
-    var manager = IndexManager.createRamIndex();
+    var manager = Index.createRamIndex();
     assert.strictEqual(manager.size(), 0);
     manager.close();
 };
 
 exports.testConcurrentAsyncAdd = function() {
-    var manager = IndexManager.createRamIndex();
+    var manager = Index.createRamIndex();
+    // check size just to create a reader
+    assert.strictEqual(manager.size(), 0);
 
     // starting 10 workers, each adding 10 documents
     var nrOfWorkers = 10;
@@ -77,14 +91,18 @@ exports.testConcurrentAsyncAdd = function() {
     }
     // wait for all workers to finish
     semaphore.wait(nrOfWorkers);
-    // FIXME: how to determine if all async adds are finished?
-    java.lang.Thread.sleep(1000);
+    // wait until the async adds have finished
+    waitFor(function() {
+        return manager.size() == docs;
+    });
     assert.strictEqual(manager.size(), docs);
     manager.close();
 };
 
 exports.testConcurrentAsyncRemove = function() {
-    var manager = IndexManager.createRamIndex();
+    var manager = Index.createRamIndex();
+    assert.strictEqual(manager.size(), 0);
+
     var nrOfWorkers = 10;
     var docsPerWorker = 3;
     var docs = [];
@@ -94,7 +112,9 @@ exports.testConcurrentAsyncRemove = function() {
         }
     }
     manager.add(docs);
-    java.lang.Thread.sleep(1000);
+    waitFor(function() {
+        return manager.size() == docs.length;
+    });
     assert.strictEqual(manager.size(), docs.length);
 
     // starting 10 workers, each removing 10 documents
@@ -113,8 +133,9 @@ exports.testConcurrentAsyncRemove = function() {
     }
     // wait for all workers to finish
     semaphore.wait(nrOfWorkers);
-    // FIXME: how to determine if all async removals are finished?
-    java.lang.Thread.sleep(2000);
+    waitFor(function() {
+        return manager.size() == 0;
+    });
     assert.strictEqual(manager.size(), 0);
     manager.close();
 };
