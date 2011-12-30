@@ -23,6 +23,11 @@ Lucindex supports creating either memory- or disk-stored search indexes. Initial
     // creating a RAM search index
     var index = Index.createRamIndex(analyzer);
 
+    // in most situations it's probably best to instantiate the index manager as singleton
+    var index = exports.index = module.singleton("index", function() {
+        return Index.createRamIndex(analyzer);
+    });
+
 ### Adding/Updating/Removing Documents
 
     var {Document, Field} = org.apache.lucene.document;
@@ -59,7 +64,6 @@ Lucindex supports creating either memory- or disk-stored search indexes. Initial
 
     // returns the 20 best matches for the above query string
     var topDocs = index.searcher.search(query, null, 20);
-
 
 
  [Apache Lucene]: http://lucene.apache.org/java/
