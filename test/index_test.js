@@ -78,16 +78,17 @@ exports.testConcurrentAsyncAdd = function() {
     var docs = nrOfWorkers * docsPerWorker;
     var semaphore = new Semaphore();
     for (var i=0; i<nrOfWorkers; i+=1) {
-        var w = new Worker({
-            "onmessage": function(event) {
-                var workerNr = event.data;
-                for (var i=0; i<docsPerWorker; i+=1) {
-                    manager.add(getSampleDocument((workerNr * 10) + i));
-                }
-                semaphore.signal();
-            }
-        });
-        w.postMessage(i);
+        var w = new Worker(module.resolve("./worker"));
+        w.onmessage = function(event) {
+            semaphore.signal();
+        };
+        w.postMessage({
+            "action": "add",
+            "manager": manager,
+            "workerNr": i,
+            "docsPerWorker": docsPerWorker,
+            "getSampleDocument": getSampleDocument
+        }, true);
     }
     // wait for all workers to finish
     semaphore.wait(nrOfWorkers);
@@ -120,16 +121,16 @@ exports.testConcurrentAsyncRemove = function() {
     // starting 10 workers, each removing 10 documents
     var semaphore = new Semaphore();
     for (var i=0; i<nrOfWorkers; i+=1) {
-        var w = new Worker({
-            "onmessage": function(event) {
-                var workerNr = event.data;
-                for (var i=0; i<docsPerWorker; i+=1) {
-                    manager.remove("id", (workerNr * 10) + i);
-                }
-                semaphore.signal();
-            }
-        });
-        w.postMessage(i);
+        var w = new Worker(module.resolve("./worker"));
+        w.onmessage = function(event) {
+            semaphore.signal();
+        };
+        w.postMessage({
+            "action": "remove",
+            "manager": manager,
+            "workerNr": i,
+            "docsPerWorker": docsPerWorker
+        }, true);
     }
     // wait for all workers to finish
     semaphore.wait(nrOfWorkers);
