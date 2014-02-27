@@ -67,6 +67,15 @@ exports.testSize = function() {
     manager.close();
 };
 
+exports.testAddDocuments = function() {
+    var manager = Index.createRamIndex();
+    manager.add([getSampleDocument(1), getSampleDocument(2)]);
+    waitFor(function() {
+        return manager.size() === 2;
+    });
+    manager.close();
+};
+
 exports.testConcurrentAsyncAdd = function() {
     var manager = Index.createRamIndex();
     // check size just to create a reader
