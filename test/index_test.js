@@ -1,10 +1,11 @@
+var system = require("system");
 var assert = require("assert");
 var fs = require("fs");
 var {Worker} = require("ringo/worker");
 var {Semaphore} = require("ringo/concurrent");
 var {Index} = require("../lib/index");
 var {FSDirectory, RAMDirectory} = org.apache.lucene.store;
-var {Document, Field} = org.apache.lucene.document;
+var {Document, Field, StringField} = org.apache.lucene.document;
 var {StandardAnalyzer} = org.apache.lucene.analysis.standard;
 var {Version} = org.apache.lucene.util;
 var File = java.io.File;
@@ -33,8 +34,7 @@ var waitFor = function(callback) {
 
 var getSampleDocument = function(value) {
     var doc = new Document();
-    doc.add(new Field("id", value || 0,
-             Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
+    doc.add(new StringField("id", value || 0, Field.Store.YES));
     return doc;
 };
 
@@ -77,7 +77,7 @@ exports.testConcurrentAsyncAdd = function() {
     var docsPerWorker = 3;
     var docs = nrOfWorkers * docsPerWorker;
     var semaphore = new Semaphore();
-    for (var i=0; i<nrOfWorkers; i+=1) {
+    for (let i=0; i<nrOfWorkers; i+=1) {
         var w = new Worker(module.resolve("./worker"));
         w.onmessage = function(event) {
             semaphore.signal();
@@ -94,7 +94,7 @@ exports.testConcurrentAsyncAdd = function() {
     semaphore.wait(nrOfWorkers);
     // wait until the async adds have finished
     waitFor(function() {
-        return manager.size() == docs;
+        return manager.size() === docs;
     });
     assert.strictEqual(manager.size(), docs);
     manager.close();
@@ -107,7 +107,7 @@ exports.testConcurrentAsyncRemove = function() {
     var nrOfWorkers = 10;
     var docsPerWorker = 3;
     var docs = [];
-    for (var i=0; i<nrOfWorkers; i+=1) {
+    for (let i=0; i<nrOfWorkers; i+=1) {
         for (var j=0; j<docsPerWorker; j+=1) {
             docs.push(getSampleDocument((i * 10) + j));
         }
@@ -120,7 +120,7 @@ exports.testConcurrentAsyncRemove = function() {
 
     // starting 10 workers, each removing 10 documents
     var semaphore = new Semaphore();
-    for (var i=0; i<nrOfWorkers; i+=1) {
+    for (let i=0; i<nrOfWorkers; i+=1) {
         var w = new Worker(module.resolve("./worker"));
         w.onmessage = function(event) {
             semaphore.signal();
@@ -129,14 +129,20 @@ exports.testConcurrentAsyncRemove = function() {
             "action": "remove",
             "manager": manager,
             "workerNr": i,
+            "nrOfWorkers": nrOfWorkers,
             "docsPerWorker": docsPerWorker
         }, true);
     }
     // wait for all workers to finish
     semaphore.wait(nrOfWorkers);
     waitFor(function() {
-        return manager.size() == 0;
+        return manager.size() === 0;
     });
     assert.strictEqual(manager.size(), 0);
     manager.close();
 };
+
+if (require.main == module.id) {
+    system.exit(require("test").run.apply(null,
+            [exports].concat(system.args.slice(1))));
+}

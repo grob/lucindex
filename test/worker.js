@@ -1,15 +1,13 @@
 function onmessage(event) {
-    var workerNr = event.data.workerNr;
-    var manager = event.data.manager;
-    var docsPerWorker = event.data.docsPerWorker;
+    var {workerNr, nrOfWorkers, manager, docsPerWorker} = event.data;
     switch (event.data.action) {
         case "remove":
-            for (var i=0; i<docsPerWorker; i+=1) {
-                manager.remove("id", (workerNr * 10) + i);
+            for (let i=0; i<docsPerWorker; i+=1) {
+                manager.remove("id", (workerNr * nrOfWorkers) + i);
             }
             break;
         case "add":
-            for (var i=0; i<docsPerWorker; i+=1) {
+            for (let i=0; i<docsPerWorker; i+=1) {
                 manager.add(event.data.getSampleDocument((workerNr * 10) + i));
             }
             break;
