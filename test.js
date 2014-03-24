@@ -13,7 +13,8 @@ var analyzer = analyzerFactory.createPerFieldAnalyzer({"name": pa, "address": pa
 var rawidx = Index.createIndex("/tmp/", "testindex", analyzer, VER);
 var idx = new SimpleIndex(rawidx, 
         {meta: 
-            {id: {type: "int", store: true}, 
+            {defaultField: "name",
+             id: {type: "int", store: true}, 
              count: {type: "float", store: true}, 
              name: {store: true}, address: {store: false}}});
 print("size: " + idx.size());
@@ -22,15 +23,16 @@ idx.removeAll();
 java.lang.Thread.sleep(1000);
 print("size: " + idx.size());
 
-var docs = [{id: 1, name: "bernd", count: 5.3, address: "Mustergasse 8"},
+var docs = [{id: 1, name: "bernd", count: 5.1, address: "Mustergasse 8"},
             {id: 2, name: "tom", count: 7.3, address: "Musterstraﬂe 9"},
-            {id: 3, name: "christian", count: 5.3, address: "Silbergasse 14"},
+            {id: 3, name: "christian", count: 5.2, address: "Silbergasse 14"},
             {id: 4, name: "robert", count: 5.3, address: "Mariahilferstraﬂe 1"},
-            {id: 5, name: "marius", count: 5.3, address: "Am Graben 9"},
-            {id: 6, name: "manius", count: 5.3, address: "Hufeisengasse"}];
+            {id: 5, name: "marius", count: 5.4, address: "Musterweg 9"},
+            {id: 6, name: "manfred", count: 5.5, address: "Hufeisengasse"}];
 
-for each (var doc in docs)
+for each (var doc in docs) {
     idx.add(doc);
+}
 
 java.lang.Thread.sleep(1000);
 print("size: " + idx.size());
@@ -40,14 +42,11 @@ idx.update("id", 1, {id: 1, name: "berndi", count: 5.2, address: "Mustergasse 8"
 java.lang.Thread.sleep(1000);
 print("size: " + idx.size());
 
-var result = idx.query(["name", "address"], "ma?ius");
+var qry = idx.createQuery({name: "ma*", address: "muster*", MUST_NOT: {id: 6}});
+var result = idx.query(qry);
 print(result.size());
-for (var i = 0; i < result.size(); i++) {
-    print (JSON.stringify(result.get(i)));
-};
+print(JSON.stringify(result));
 
-result = idx.query("count", 5.3);
+result = idx.query(idx.createQuery({count: {min: 5.2, max: 5.5}}));
 print(result.size());
-for (var i = 0; i < result.size(); i++) {
-    print (JSON.stringify(result.get(i)));
-};
+print(JSON.stringify(result));
