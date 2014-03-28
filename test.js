@@ -54,7 +54,8 @@ var queries = [
                {count: 5.3},
                {address: "Muster*", MUST_NOT: {id: 6}},
                {date: {min: "2014-01-02T02:32:00.000Z", max: "2014-01-04T02:32:00.000Z"}},
-               {title: "Dr"}];
+               {title: "Dr"},
+               {date: "2014-01-03T02:39:00.000Z"}];
 
 for each (var qry in queries) {
     var result = idx.query(idx.createQuery(qry));
