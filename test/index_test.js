@@ -38,7 +38,7 @@ var getSampleDocument = function(value) {
     return doc;
 };
 
-exports.testInitRamDirectory = function() {
+/* exports.testInitRamDirectory = function() {
     var dir = Index.initRamDirectory();
     assert.isNotNull(dir);
     assert.isTrue(dir instanceof RAMDirectory);
@@ -50,7 +50,7 @@ exports.testInitDirectory = function() {
     assert.isNotNull(dir);
     assert.isTrue(dir instanceof FSDirectory);
     tempDir["delete"]();
-};
+}; */
 
 exports.testConstructor = function() {
     var manager = Index.createRamIndex();
