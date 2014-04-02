@@ -8,7 +8,9 @@ var {FSDirectory, RAMDirectory} = org.apache.lucene.store;
 var {Document, Field, StringField} = org.apache.lucene.document;
 var {StandardAnalyzer} = org.apache.lucene.analysis.standard;
 var {Version} = org.apache.lucene.util;
-var File = java.io.File;
+var {MatchAllDocsQuery} = org.apache.lucene.search;
+var {File} = java.io;
+var {Integer} = java.lang;
 
 var getTempDir = function() {
     var tempDir = new File(java.lang.System.getProperty("java.io.tmpdir"),
@@ -149,6 +151,22 @@ exports.testConcurrentAsyncRemove = function() {
     });
     assert.strictEqual(manager.size(), 0);
     manager.close();
+};
+
+exports.testSearcherRefresh = function() {
+    var manager = Index.createRamIndex();
+    var searcher1 = manager.getSearcher();
+    searcher1.search(new MatchAllDocsQuery(), Integer.MAX_VALUE);
+    manager.releaseSearcher(searcher1);
+    manager.add([getSampleDocument(1), getSampleDocument(2)]);
+    waitFor(function() {
+        return manager.size() === 2;
+    });
+    var searcher2 = manager.getSearcher();
+    assert.isFalse(searcher1.equals(searcher2))
+    var result = searcher2.search(new MatchAllDocsQuery(), Integer.MAX_VALUE);
+    assert.strictEqual(result.totalHits, 2);
+    manager.releaseSearcher(searcher2);
 };
 
 if (require.main == module.id) {
