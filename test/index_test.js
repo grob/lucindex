@@ -48,7 +48,7 @@ exports.testInitRamDirectory = function() {
 
 exports.testInitDirectory = function() {
     var tempDir = getTempDir();
-    var dir = Index.initDirectory("test", tempDir);
+    var dir = Index.initDirectory(tempDir, "test");
     assert.isNotNull(dir);
     assert.isTrue(dir instanceof FSDirectory);
     tempDir["delete"]();
