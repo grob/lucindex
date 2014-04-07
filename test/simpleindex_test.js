@@ -1,6 +1,6 @@
 
 var assert = require("assert");
-var {Index, SimpleIndex} = require("../lib/main");
+var {Index, SimpleIndex, QueryBuilder} = require("../lib/main");
 var {TextField, DoubleField, IntField, DateField, LongField, StringField} = require("../lib/fields");
 var {MatchAllDocsQuery} = org.apache.lucene.search;
 
@@ -159,7 +159,11 @@ var query = function(si, arr) {
         if (typeof(qry.query) == "object" && qry.query.class && qry.query.class.toString().indexOf("org.apache.lucene.search.") > -1) {
             query = qry.query;
         } else {
-            query = si.createQuery(qry.query);
+            var qb = new QueryBuilder(si);
+            for (var i in qry.query) {
+                qb.should(i, qry.query[i]);
+            }
+            query = qb.getQuery();
         }
         var result = si.query(query);
         assert.equal(result.topdocs.totalHits, qry.hits);
