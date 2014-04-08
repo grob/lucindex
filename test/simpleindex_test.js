@@ -153,6 +153,16 @@ exports.testQueryString = function() {
             hits: 1, expected: [{doubleField: 1.1, intField: 1, dateField: new Date(2014, 0, 1, 0, 0, 0, 0), longField: 1, stringField: "eins"}]}]);
 };
 
+exports.testQueryInvalid = function() {
+    var si = querySetup();
+    assert.throws(function() {
+        si.query();
+    });
+    assert.throws(function() {
+        si.query("invalid stuff");
+    });
+}
+
 var query = function(si, arr) {
     for each (var qry in arr) {
         var query;
