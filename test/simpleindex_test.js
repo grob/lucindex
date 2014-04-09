@@ -161,7 +161,7 @@ exports.testQueryInvalid = function() {
     assert.throws(function() {
         si.query("invalid stuff");
     });
-}
+};
 
 var query = function(si, arr) {
     for each (var qry in arr) {
@@ -180,7 +180,7 @@ var query = function(si, arr) {
         si.index.releaseSearcher(result.searcher);
         assert.isTrue(expectedQueryResult(si, result, qry.expected));
     }
-}
+};
 
 var querySetup = function() {
     var si = new SimpleIndex(index, {defaultField: "doubleField",
