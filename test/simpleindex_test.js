@@ -24,7 +24,6 @@ exports.setUp = function() {
 
 exports.tearDown = function() {
     index.close();
-    delete index;
 };
 
 exports.testCreate = function() {
@@ -76,7 +75,7 @@ var updateTestSetup = function() {
         hits: 2, expected: [{doubleField: 1.2, intField: 1, dateField: new Date(2014, 0, 1, 0, 0, 0, 0), longField: 3, stringField: "eins"},
                             {doubleField: 2.4, intField: 2, dateField: new Date(2014, 0, 2, 0, 0, 0, 0), longField: 4, stringField: "zwei"}]}]);
     return si;
-}
+};
 
 exports.testUpdateDouble = function() {
     var si = updateTestSetup();
