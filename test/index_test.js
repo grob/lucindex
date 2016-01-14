@@ -6,33 +6,10 @@ var {Semaphore} = require("ringo/concurrent");
 var {Index} = require("../lib/main");
 var {FSDirectory, RAMDirectory} = org.apache.lucene.store;
 var {Document, Field, StringField} = org.apache.lucene.document;
-var {StandardAnalyzer} = org.apache.lucene.analysis.standard;
-var {Version} = org.apache.lucene.util;
-var {MatchAllDocsQuery} = org.apache.lucene.search;
-var {File} = java.io;
+var {MatchAllDocsQuery, BooleanQuery, BooleanClause, TermQuery} = org.apache.lucene.search;
+var {Term} = org.apache.lucene.index;
 var {Integer} = java.lang;
-
-var getTempDir = function() {
-    var tempDir = new File(java.lang.System.getProperty("java.io.tmpdir"),
-            "index" + java.lang.System.nanoTime());
-    if (!tempDir.mkdir()) {
-        throw new Error("Unable to create temporary index directory: " +
-                tempDir.getAbsolutePath());
-    }
-    return tempDir;
-};
-
-var waitFor = function(callback) {
-    var timeout = java.lang.System.currentTimeMillis() + 2000;
-    while (callback() == false) {
-        if (java.lang.System.currentTimeMillis() < timeout) {
-            java.lang.Thread.currentThread().sleep(100);
-        } else {
-            throw new Error("Timeout");
-        }
-    }
-    return true;
-};
+var utils = require("./utils");
 
 var getSampleDocument = function(value) {
     var doc = new Document();
@@ -47,7 +24,7 @@ exports.testInitRamDirectory = function() {
 };
 
 exports.testInitDirectory = function() {
-    var tempDir = getTempDir();
+    var tempDir = utils.getTempDir();
     var dir = Index.initDirectory(tempDir, "test");
     assert.isNotNull(dir);
     assert.isTrue(dir instanceof FSDirectory);
@@ -72,10 +49,32 @@ exports.testSize = function() {
 exports.testAddDocuments = function() {
     var manager = Index.createRamIndex();
     manager.add([getSampleDocument(1), getSampleDocument(2)]);
-    waitFor(function() {
+    utils.waitFor(function() {
         return manager.size() === 2;
     });
     manager.close();
+};
+
+exports.testRemoveByQuery = function() {
+    var manager = Index.createRamIndex();
+    var doc1 = new Document();
+    doc1.add(new StringField("id", 1, Field.Store.YES));
+    doc1.add(new StringField("type", "a", Field.Store.NO));
+    var doc2 = new Document();
+    doc2.add(new StringField("id", 1, Field.Store.YES));
+    doc2.add(new StringField("type", "b", Field.Store.NO));
+    manager.add([doc1, doc2]);
+    utils.waitFor(function() {
+        return manager.size() === 2;
+    });
+    var queryBuilder = new BooleanQuery.Builder();
+    queryBuilder.add(new TermQuery(new Term("type", "a")), BooleanClause.Occur.MUST);
+    queryBuilder.add(new TermQuery(new Term("id", 1)), BooleanClause.Occur.MUST);
+    var query = queryBuilder.build();
+    manager.removeByQuery(query);
+    utils.waitFor(function() {
+        return manager.size() === 1;
+    });
 };
 
 exports.testConcurrentAsyncAdd = function() {
@@ -104,7 +103,7 @@ exports.testConcurrentAsyncAdd = function() {
     // wait for all workers to finish
     semaphore.wait(nrOfWorkers);
     // wait until the async adds have finished
-    waitFor(function() {
+    utils.waitFor(function() {
         return manager.size() === docs;
     });
     assert.strictEqual(manager.size(), docs);
@@ -124,7 +123,7 @@ exports.testConcurrentAsyncRemove = function() {
         }
     }
     manager.add(docs);
-    waitFor(function() {
+    utils.waitFor(function() {
         return manager.size() == docs.length;
     });
     assert.strictEqual(manager.size(), docs.length);
@@ -146,7 +145,7 @@ exports.testConcurrentAsyncRemove = function() {
     }
     // wait for all workers to finish
     semaphore.wait(nrOfWorkers);
-    waitFor(function() {
+    utils.waitFor(function() {
         return manager.size() === 0;
     });
     assert.strictEqual(manager.size(), 0);
@@ -159,7 +158,7 @@ exports.testSearcherRefresh = function() {
     searcher1.search(new MatchAllDocsQuery(), Integer.MAX_VALUE);
     manager.releaseSearcher(searcher1);
     manager.add([getSampleDocument(1), getSampleDocument(2)]);
-    waitFor(function() {
+    utils.waitFor(function() {
         return manager.size() === 2;
     });
     var searcher2 = manager.getSearcher();

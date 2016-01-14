@@ -3,18 +3,7 @@ var assert = require("assert");
 var {Index, SimpleIndex, QueryBuilder} = require("../lib/main");
 var {TextField, DoubleField, IntField, DateField, LongField, StringField} = require("../lib/fields");
 var {MatchAllDocsQuery} = org.apache.lucene.search;
-
-var waitFor = function(callback) {
-    var timeout = java.lang.System.currentTimeMillis() + 2000;
-    while (callback() == false) {
-        if (java.lang.System.currentTimeMillis() < timeout) {
-            java.lang.Thread.currentThread().sleep(100);
-        } else {
-            throw new Error("Timeout");
-        }
-    }
-    return true;
-};
+var utils = require("./utils");
 
 var index;
 
@@ -47,7 +36,7 @@ exports.testAdd = function() {
                           {doubleField: 2.4, intField: 2, dateField: new Date(2014, 0, 2, 21, 9), longField: 4, stringField: "zwei"}]) {
         si.add(doc);
     }
-    waitFor(function() {
+    utils.waitFor(function() {
         return si.size() == 2;
     });
     query(si, [{query: new MatchAllDocsQuery(), 
@@ -68,7 +57,7 @@ var updateTestSetup = function() {
                           {doubleField: 2.4, intField: 2, dateField: new Date(2014, 0, 2, 21, 9), longField: 4, stringField: "zwei"}]) {
         si.add(doc);
     }
-    waitFor(function() {
+    utils.waitFor(function() {
         return si.size() == 2;
     });
     query(si, [{query: new MatchAllDocsQuery(), 
@@ -196,7 +185,7 @@ var querySetup = function() {
                           {doubleField: 5.3, intField: 4, dateField: new Date(2014, 0, 4, 21, 9), longField: 4, stringField: "vier"}]) {
         si.add(doc);
     }
-    waitFor(function() {
+    utils.waitFor(function() {
         return si.size() == 4;
     });
     return si;

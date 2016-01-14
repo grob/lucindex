@@ -1,6 +1,11 @@
 function onmessage(event) {
     var {workerNr, nrOfWorkers, manager, docsPerWorker} = event.data;
     switch (event.data.action) {
+        case "removeByQuery":
+            for (let i=0; i<docsPerWorker; i+=1) {
+                manager.removeByQuery(event.data.query);
+            }
+            break;
         case "remove":
             for (let i=0; i<docsPerWorker; i+=1) {
                 manager.remove("id", (workerNr * nrOfWorkers) + i);
