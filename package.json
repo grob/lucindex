@@ -1,6 +1,6 @@
 {
     "name": "lucindex",
-    "version": "0.1",
+    "version": "0.5",
     "description": "A search index manager for RingoJS based on Lucene (http://lucene.apache.org/java/)",
     "keywords": ["ringo", "lucene", "index", "search"],
     "homepage": "https://github.com/grob/lucindex",
@@ -9,11 +9,17 @@
         "email": "robert@nomatic.org",
         "web": "http://github.com/grob/"
     }],
-    "contributors": [{
-        "name": "Robert Gaggl",
-        "email": "robert@nomatic.org",
-        "web": "http://github.com/grob/"
-    }],
+    "contributors": [
+        {
+            "name": "Robert Gaggl",
+            "email": "robert@nomatic.org",
+            "web": "http://github.com/grob/"
+        },
+        {
+            "name": "Manfred Andres",
+            "email": "manfred.andres@gmail.com"
+        }
+    ],
     "bugs": "http://github.com/grob/lucindex/issues",
     "licences": [{
         "type": "Apache License Version 2.0",
