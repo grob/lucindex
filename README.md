@@ -30,25 +30,35 @@ Lucindex supports creating either memory- or disk-stored search indexes. Initial
 
 ### Adding/Updating/Removing Documents
 
-    var {Document, Field, LongField, TextField} = org.apache.lucene.document;
-    var utils = require("lucindex/utils");
+    var {Document, Field, NumericDocValuesField,
+            StoredField, StringField, TextField} = org.apache.lucene.document;
 
     // create a new document instance with two fields ("id" and "name")
+    var id = 1;
+    var name = "Lucindex for RingoJS";
     var doc = new Document();
-    doc.add(new LongField("id", 1, Field.Store.YES));
-    doc.add(new TextField("name", "Lucindex for RingoJS", Field.Store.NO));
+    // index id as stored numeric field
+    doc.add(new NumericDocValuesField("id", id));
+    doc.add(new StoredField("id", id));
+    // plus index id as string field so that searching for it works too
+    doc.add(new StringField("id", id.toString(), Field.Store.NO));
+    doc.add(new TextField("name", name, Field.Store.NO));
 
     // add the document to the index. NOTE: this is done asynchronously
     index.add(doc);
 
     // asynchronously replace the document with id 1 with another one
     var doc = new Document();
-    doc.add(new LongField("id", 1, Field.Store.YES));
+    // index id as stored numeric field
+    doc.add(new NumericDocValuesField("id", id));
+    doc.add(new StoredField("id", id));
+    // plus index id as string field so that searching for it works too
+    doc.add(new StringField("id", id.toString(), Field.Store.NO));
     doc.add(new TextField("name", "Ringo SqlStore", Field.Store.NO));
-    index.update("id", utils.prepareLongValue(1), doc);
+    index.update("id", id, doc);
 
     // asynchronously remove the document again
-    index.remove("id", utils.prepareLongValue(1));
+    index.remove("id", id);
 
 ### Searching
 
@@ -61,6 +71,11 @@ Lucindex supports creating either memory- or disk-stored search indexes. Initial
     // returns the 20 best matches for the above query string
     var searcher = index.getSearcher();
     var topDocs = searcher.search(query, null, 20);
+    
+    // process search hit
+    var doc = index.reader.document(topDocs.scoreDocs[0].doc);
+    var id = doc.getField("id").numericValue();
+    console.log("ID:", id);
     
     // release the searcher again
     index.releaseSearcher(searcher);
