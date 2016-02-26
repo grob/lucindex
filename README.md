@@ -4,7 +4,7 @@ Lucindex is a lightweight wrapper around [Apache Lucene] for [RingoJS]. It provi
 
 ## Status
 
-Lucindex is experimental beta, so expect bugs and performance issues as well as significant API changes.
+Although Lucindex is pre-1.0, it has been used in production in various applications for several years now. Nevertheless chances are that on the way to version 1.0 there will be incompatible API changes.
 
 ## Documentation
 
@@ -15,7 +15,7 @@ Lucindex supports creating either memory- or disk-stored search indexes. Initial
     var {Index} = require("lucindex");
     var {StandardAnalyzer} = org.apache.lucene.analysis.standard;
     var {Version} = org.apache.lucene.util;
-    var analyzer = new StandardAnalyzer(Version.LUCENE_35);
+    var analyzer = new StandardAnalyzer();
 
     // creating a disk-persisted search index
     var index = Index.createIndex("/path/to/index/basedirectory", "nameofindex", analyzer)
@@ -30,40 +30,40 @@ Lucindex supports creating either memory- or disk-stored search indexes. Initial
 
 ### Adding/Updating/Removing Documents
 
-    var {Document, Field} = org.apache.lucene.document;
+    var {Document, Field, LongField, TextField} = org.apache.lucene.document;
+    var utils = require("lucindex/utils");
 
     // create a new document instance with two fields ("id" and "name")
     var doc = new Document();
-    doc.add(new Field("id", 1,
-                Field.Store.YES, Field.Index.NOT_ANALYZED, Field.TermVector.NO));
-    doc.add(new Field("name", "Lucindex for RingoJS",
-                Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
+    doc.add(new LongField("id", 1, Field.Store.YES));
+    doc.add(new TextField("name", "Lucindex for RingoJS", Field.Store.NO));
 
     // add the document to the index. NOTE: this is done asynchronously
     index.add(doc);
 
     // asynchronously replace the document with id 1 with another one
     var doc = new Document();
-    doc.add(new Field("id", 1,
-                Field.Store.YES, Field.Index.NOT_ANALYZED, Field.TermVector.NO));
-    doc.add(new Field("name", "Ringo SqlStore",
-                Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
-    index.update("id", 1, doc);
+    doc.add(new LongField("id", 1, Field.Store.YES));
+    doc.add(new TextField("name", "Ringo SqlStore", Field.Store.NO));
+    index.update("id", utils.prepareLongValue(1), doc);
 
     // asynchronously remove the document again
-    index.remove("id", 1);
+    index.remove("id", utils.prepareLongValue(1));
 
 ### Searching
 
-    var {QueryParser} = org.apache.lucene.queryParser;
+    var {QueryParser} = org.apache.lucene.queryparser.classic;
     var {StandardAnalyzer} = org.apache.lucene.analysis.standard;
-    var {Version} = org.apache.lucene.util;
-    var analyzer = new StandardAnalyzer(Version.LUCENE_35);
-    var queryParser = new QueryParser(Version.LUCENE_35, "name", analyzer);
-    var query = queryParser.parse("my query string");
+    var analyzer = new StandardAnalyzer();
+    var queryParser = new QueryParser("name", analyzer);
+    var query = queryParser.parse("ringo");
 
     // returns the 20 best matches for the above query string
-    var topDocs = index.searcher.search(query, null, 20);
+    var searcher = index.getSearcher();
+    var topDocs = searcher.search(query, null, 20);
+    
+    // release the searcher again
+    index.releaseSearcher(searcher);
 
 
  [Apache Lucene]: http://lucene.apache.org/java/
@@ -82,7 +82,16 @@ Currently existing fields:
 
 #### Using SimpleIndex:
 
-    // Create a lucindex Index with your desired analyzer and version (see above)
+    var {Index} = require("lucindex");
+    var {SimpleIndex} = require("lucindex/simpleindex");
+    var {IntField, TextField, DateField} = require("lucindex/fields");
+    var {QueryBuilder} = require("lucindex/querybuilder");
+    var {StandardAnalyzer} = org.apache.lucene.analysis.standard;
+    var analyzer = new StandardAnalyzer();
+
+    // creating a disk-persisted search index
+    var index = Index.createIndex("/path/to/index/basedirectory", "nameofindex", analyzer)
+    
     var si = new SimpleIndex(index, {
         defaultField: "name",
         id: new IntField({name: "id", store: true}),
@@ -104,11 +113,13 @@ Currently existing fields:
         id: 1,
         name: "maximilian mustermann",
         createtime: new Date()
-    });
+    }));
 
-    var result = si.query(si.createQuery({name: "muster*"});
+    var queryBuilder = new QueryBuilder(si);
+    queryBuilder.must("name", "muster*");
+    var result = si.query(queryBuilder.getQuery());
     // hits will be 1 in this case
-    var hits = result.topdocs.totalhits;
+    var hits = result.topdocs.totalHits;
     // jsDoc will be a javascript-object like {id: 1, name: "max mustermann", createtime: "2014-01-01T14:23:00.000Z"}
     // where the createtime will be an actual javascript date
-    var jsDoc = si.convertDocument(result.searcher.doc(result.topdocs.scoreDoc[0].doc));
+    var jsDoc = si.convertDocument(result.searcher.doc(result.topdocs.scoreDocs[0].doc));
