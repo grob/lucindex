@@ -1,4 +1,4 @@
-function onmessage(event) {
+const onmessage = (event) => {
     var {workerNr, nrOfWorkers, manager, docsPerWorker} = event.data;
     switch (event.data.action) {
         case "removeByQuery":
@@ -22,4 +22,4 @@ function onmessage(event) {
     event.source.postMessage({
         "workerNr": workerNr
     });
-}
+};

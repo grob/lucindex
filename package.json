@@ -1,6 +1,6 @@
 {
     "name": "lucindex",
-    "version": "1.0",
+    "version": "2.0",
     "description": "A search index manager for RingoJS based on Lucene (http://lucene.apache.org/java/)",
     "keywords": ["ringo", "lucene", "index", "search"],
     "homepage": "https://github.com/grob/lucindex",

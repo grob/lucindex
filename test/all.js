@@ -1,4 +1,4 @@
-var system = require("system");
+const system = require("system");
 
 exports.testIndex = require("./index_test");
 
